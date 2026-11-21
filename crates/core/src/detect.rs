@@ -16,6 +16,9 @@ const MIN_CHARS: usize = 2;
 const MAX_CHARS: usize = 40;
 const MIN_SCORE: f32 = 0.6;
 
+const RU_SINGLE: &[&str] = &["а", "в", "и", "к", "о", "с", "у", "я"];
+const EN_SINGLE: &[&str] = &["a", "i"];
+
 const RU_CORE: &[&str] = &[
     "ага", "ай", "ах", "ба", "бы", "ведь", "во", "вот", "вон", "все", "да", "даже",
     "дескать", "же", "ка", "как", "конечно", "кстати", "ладно", "ли", "лишь", "мне",
@@ -31,16 +34,21 @@ const RU_CORE: &[&str] = &[
 ];
 
 const EN_CORE: &[&str] = &[
-    "ah", "actually", "alas", "anyway", "boo", "duh", "eh", "even", "gonna", "gosh",
-    "gotta", "hey", "hi", "hmm", "huh", "indeed", "jeez", "just", "kinda", "like",
-    "literally", "maybe", "mhm", "nah", "nope", "oh", "ooh", "okay", "only", "ouch",
-    "phew", "perhaps", "prolly", "really", "right", "so", "sorta", "still", "surely",
-    "uh", "um", "wanna", "well", "whatever", "whoa", "wow", "yeah", "yep", "yknow",
-    "yet", "you", "yay",
+    "a", "ah", "am", "an", "and", "are", "as", "at", "be", "but", "by", "do", "for",
+    "go", "he", "if", "in", "is", "it", "me", "my", "no", "of", "on", "or", "so",
+    "to", "up", "us", "we", "actually", "alas", "anyway", "boo", "duh", "eh",
+    "even", "gonna", "gosh", "gotta", "hey", "hi", "hmm", "huh", "indeed", "jeez",
+    "just", "kinda", "like", "literally", "maybe", "mhm", "nah", "nope", "oh", "ooh",
+    "okay", "only", "ouch", "phew", "perhaps", "prolly", "really", "right",
+    "sorta", "still", "surely", "uh", "um", "wanna", "well", "whatever", "whoa", "wow",
+    "yeah", "yep", "yknow", "yet", "you", "yay",
 ];
 
 pub fn evaluate(typed: &str, converted: &str) -> Verdict {
     let typed_len = typed.chars().count();
+    if typed_len == 1 {
+        return evaluate_single(typed, converted);
+    }
     if !(MIN_CHARS..=MAX_CHARS).contains(&typed_len) {
         return Verdict::Keep;
     }
@@ -83,6 +91,32 @@ pub fn evaluate(typed: &str, converted: &str) -> Verdict {
         && (target_score > source_score
             || (target_score == source_score && core_hit(core, &converted_letters)))
     {
+        Verdict::Convert
+    } else {
+        Verdict::Keep
+    }
+}
+
+fn evaluate_single(typed: &str, converted: &str) -> Verdict {
+    let Some(source_script) = script_of(typed) else {
+        return Verdict::Keep;
+    };
+    let letters = letters_of(converted);
+    if letters.chars().count() != 1 {
+        return Verdict::Keep;
+    }
+    let Some(target_script) = script_of(&letters) else {
+        return Verdict::Keep;
+    };
+    if source_script == target_script {
+        return Verdict::Keep;
+    }
+    let singles = match target_script {
+        Script::Latin => EN_SINGLE,
+        Script::Cyrillic => RU_SINGLE,
+    };
+    let normalized = dict::normalize(&letters);
+    if singles.contains(&normalized.as_str()) {
         Verdict::Convert
     } else {
         Verdict::Keep
@@ -176,6 +210,29 @@ mod tests {
         assert_eq!(evaluate("e;t", "уже"), Verdict::Convert);
         assert_eq!(evaluate("'nj", "это"), Verdict::Convert);
         assert_eq!(evaluate("djj,ot", "вообще"), Verdict::Convert);
+    }
+
+    #[test]
+    fn converts_single_letter_words() {
+        assert_eq!(evaluate("z", "я"), Verdict::Convert);
+        assert_eq!(evaluate("b", "и"), Verdict::Convert);
+        assert_eq!(evaluate("d", "в"), Verdict::Convert);
+        assert_eq!(evaluate("Z", "Я"), Verdict::Convert);
+    }
+
+    #[test]
+    fn keeps_single_non_words() {
+        assert_eq!(evaluate("a", "ф"), Verdict::Keep);
+        assert_eq!(evaluate("i", "ш"), Verdict::Keep);
+        assert_eq!(evaluate("s", "ы"), Verdict::Keep);
+        assert_eq!(evaluate("ф", "a"), Verdict::Convert);
+        assert_eq!(evaluate("ш", "i"), Verdict::Convert);
+        assert_eq!(evaluate("я", "z"), Verdict::Keep);
+    }
+
+    #[test]
+    fn converts_tie_with_core_hit() {
+        assert_eq!(evaluate("тщ", "no"), Verdict::Convert);
     }
 
     #[test]

@@ -221,6 +221,9 @@ fn commit_inner(vk: u16, boundary: Boundary) -> bool {
     if word.is_empty() {
         return false;
     }
+    if word.len() == 1 && matches!(boundary, Boundary::Char(_)) {
+        return false;
+    }
 
     let Some(target) = target_layout() else {
         return false;
