@@ -12,7 +12,7 @@ Binary: `target/release/key-helper.exe`
 
 ## Data
 
-Dictionaries in `crates/core/data/` combine [danakt/russian-words](https://github.com/danakt/russian-words) (MIT), [dwyl/english-words](https://github.com/dwyl/english-words) (Unlicense), [hingston/russian](https://github.com/hingston/russian) (CC BY 2.5) and [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords) (content CC-BY-SA-4.0, code MIT). See `LICENSE` for code terms.
+Dictionaries in `crates/core/data/` combine [danakt/russian-words](https://github.com/danakt/russian-words) (MIT), [dwyl/english-words](https://github.com/dwyl/english-words) (Unlicense), [hingston/russian](https://github.com/hingston/russian) (CC BY 2.5), [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords) (content CC-BY-SA-4.0, code MIT), [zuzk/largest-word-list](https://github.com/zuzk/largest-word-list) (MIT), [open-dict-data/wikidict-wordlist](https://github.com/open-dict-data/wikidict-wordlist) (CC0) and [jumberties/agk-wordlists](https://github.com/jumberties/agk-wordlists) (MPL-1.1, derived from brown-uk/dict_uk). Supports English, Russian and Ukrainian layouts. See `LICENSE` for code terms.
 
 ## License
 

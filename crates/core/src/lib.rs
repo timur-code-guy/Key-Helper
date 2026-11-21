@@ -1,4 +1,4 @@
 mod detect;
 mod dict;
 
-pub use detect::{evaluate, Verdict};
+pub use detect::{evaluate, Language, Verdict};

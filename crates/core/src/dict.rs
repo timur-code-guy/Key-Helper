@@ -2,6 +2,7 @@ use std::sync::OnceLock;
 
 const RU_WORDS: &str = include_str!("../data/ru.txt");
 const EN_WORDS: &str = include_str!("../data/en.txt");
+const UK_WORDS: &str = include_str!("../data/uk.txt");
 
 pub struct Dictionary {
     words: Vec<&'static str>,
@@ -34,6 +35,7 @@ pub(crate) fn normalize(word: &str) -> String {
 
 static RU: OnceLock<Dictionary> = OnceLock::new();
 static EN: OnceLock<Dictionary> = OnceLock::new();
+static UK: OnceLock<Dictionary> = OnceLock::new();
 
 pub fn russian() -> &'static Dictionary {
     RU.get_or_init(|| Dictionary::from_source(RU_WORDS))
@@ -41,4 +43,8 @@ pub fn russian() -> &'static Dictionary {
 
 pub fn english() -> &'static Dictionary {
     EN.get_or_init(|| Dictionary::from_source(EN_WORDS))
+}
+
+pub fn ukrainian() -> &'static Dictionary {
+    UK.get_or_init(|| Dictionary::from_source(UK_WORDS))
 }

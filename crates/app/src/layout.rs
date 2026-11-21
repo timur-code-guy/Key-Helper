@@ -8,6 +8,7 @@ pub type Hkl = HKL;
 
 pub const LANG_EN: u16 = 0x09;
 pub const LANG_RU: u16 = 0x19;
+pub const LANG_UK: u16 = 0x22;
 
 const VK_SHIFT: u16 = 0x10;
 const VK_CAPITAL: u16 = 0x14;

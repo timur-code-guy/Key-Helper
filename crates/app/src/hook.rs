@@ -1,4 +1,4 @@
-use key_helper_core::{evaluate, Verdict};
+use key_helper_core::{evaluate, Language, Verdict};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -149,12 +149,11 @@ fn push_stroke(ch: char, vk: u16) {
 }
 
 fn is_letter_in_other_layout(vk: u16) -> bool {
-    let Some(target) = target_layout() else {
-        return false;
-    };
-    layout::char_for_key(target, vk, state::shift_held(), state::caps_on())
-        .map(is_word_char)
-        .unwrap_or(false)
+    candidate_layouts().iter().any(|(hkl, _)| {
+        layout::char_for_key(*hkl, vk, state::shift_held(), state::caps_on())
+            .map(is_word_char)
+            .unwrap_or(false)
+    })
 }
 
 fn on_keyup(vk: u16) -> bool {
@@ -202,7 +201,7 @@ fn is_word_char(c: char) -> bool {
 fn decode_char(vk: u16) -> Option<char> {
     let hkl = layout::current_layout();
     let lang = layout::primary_lang(hkl);
-    if lang != layout::LANG_EN && lang != layout::LANG_RU {
+    if lang != layout::LANG_EN && lang != layout::LANG_RU && lang != layout::LANG_UK {
         return None;
     }
     layout::char_for_key(hkl, vk, state::shift_held(), state::caps_on())
@@ -225,17 +224,25 @@ fn commit_inner(vk: u16, boundary: Boundary) -> bool {
         return false;
     }
 
-    let Some(target) = target_layout() else {
+    let current = layout::current_layout();
+    let Some(source) = language_of(layout::primary_lang(current)) else {
         return false;
     };
-    let Some(converted) = convert_strokes(&word, target) else {
-        return false;
-    };
-
     let typed: String = word.iter().map(|t| t.ch).collect();
-    if evaluate(&typed, &converted) != Verdict::Convert {
-        return false;
+
+    let mut chosen = None;
+    for (hkl, target_lang) in candidate_layouts() {
+        let Some(converted) = convert_strokes(&word, hkl) else {
+            continue;
+        };
+        if evaluate(&typed, &converted, source, target_lang) == Verdict::Convert {
+            chosen = Some((hkl, converted));
+            break;
+        }
     }
+    let Some((target, converted)) = chosen else {
+        return false;
+    };
 
     state::suppress_key(vk);
 
@@ -266,13 +273,35 @@ fn convert_strokes(word: &[TypedChar], target: layout::Hkl) -> Option<String> {
     Some(out)
 }
 
-fn target_layout() -> Option<layout::Hkl> {
+fn language_of(lang: u16) -> Option<Language> {
+    match lang {
+        layout::LANG_EN => Some(Language::English),
+        layout::LANG_RU => Some(Language::Russian),
+        layout::LANG_UK => Some(Language::Ukrainian),
+        _ => None,
+    }
+}
+
+fn lang_id(lang: Language) -> u16 {
+    match lang {
+        Language::English => layout::LANG_EN,
+        Language::Russian => layout::LANG_RU,
+        Language::Ukrainian => layout::LANG_UK,
+    }
+}
+
+fn candidate_layouts() -> Vec<(layout::Hkl, Language)> {
     let current = layout::current_layout();
-    let lang = layout::primary_lang(current);
-    let target_lang = if lang == layout::LANG_EN {
-        layout::LANG_RU
-    } else {
-        layout::LANG_EN
+    let Some(source) = language_of(layout::primary_lang(current)) else {
+        return Vec::new();
     };
-    layout::find_layout(target_lang)
+    let order: &[Language] = match source {
+        Language::English => &[Language::Russian, Language::Ukrainian],
+        Language::Russian => &[Language::English, Language::Ukrainian],
+        Language::Ukrainian => &[Language::English, Language::Russian],
+    };
+    order
+        .iter()
+        .filter_map(|&lang| layout::find_layout(lang_id(lang)).map(|hkl| (hkl, lang)))
+        .collect()
 }
