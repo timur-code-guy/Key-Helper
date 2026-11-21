@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "key-helper"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "key-helper-core",
  "windows",
@@ -12,7 +12,7 @@ dependencies = [
 
 [[package]]
 name = "key-helper-core"
-version = "1.0.2"
+version = "1.0.3"
 
 [[package]]
 name = "proc-macro2"
