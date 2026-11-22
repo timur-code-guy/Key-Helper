@@ -10,7 +10,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     GetCursorPos, HWND_MESSAGE, IDI_APPLICATION, LoadIconW, MF_CHECKED, MF_STRING, MF_UNCHECKED,
     PostQuitMessage,
     RegisterClassW, SetForegroundWindow, TPM_RETURNCMD, TrackPopupMenu, WINDOW_EX_STYLE,
-    WINDOW_STYLE, WNDCLASSW, WM_COMMAND, WM_DESTROY, WM_RBUTTONUP, WM_USER,
+    WINDOW_STYLE, WNDCLASSW, WM_CLOSE, WM_COMMAND, WM_DESTROY, WM_RBUTTONUP, WM_USER,
 };
 use windows::core::w;
 
@@ -80,6 +80,20 @@ pub fn init() {
     }
 }
 
+pub fn quit() {
+    let raw = TRAY_HWND.load(Ordering::SeqCst);
+    if raw != 0 {
+        unsafe {
+            let _ = windows::Win32::UI::WindowsAndMessaging::PostMessageW(
+                Some(HWND(raw as *mut _)),
+                windows::Win32::UI::WindowsAndMessaging::WM_CLOSE,
+                WPARAM(0),
+                LPARAM(0),
+            );
+        }
+    }
+}
+
 pub fn shutdown() {
     let raw = TRAY_HWND.swap(0, Ordering::SeqCst);
     if raw == 0 {
@@ -120,6 +134,10 @@ unsafe extern "system" fn tray_proc(
             } else {
                 unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) }
             }
+        }
+        WM_CLOSE => {
+            let _ = DestroyWindow(hwnd);
+            LRESULT(0)
         }
         WM_DESTROY => {
             PostQuitMessage(0);

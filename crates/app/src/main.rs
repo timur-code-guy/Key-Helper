@@ -5,6 +5,7 @@ mod input;
 mod layout;
 mod state;
 mod tray;
+mod update;
 
 use windows::Win32::Foundation::{CloseHandle, ERROR_ALREADY_EXISTS, GetLastError};
 use windows::Win32::System::Threading::CreateMutexW;
@@ -21,6 +22,7 @@ fn main() {
 
     hook::install();
     tray::init();
+    update::spawn();
 
     unsafe {
         let mut msg = MSG::default();
