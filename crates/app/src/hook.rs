@@ -2,8 +2,9 @@ use key_helper_core::{evaluate, Language, Verdict};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, GetForegroundWindow, HHOOK, KBDLLHOOKSTRUCT, LLKHF_INJECTED, SetWindowsHookExW,
-    UnhookWindowsHookEx, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+    CallNextHookEx, GetForegroundWindow, SetWindowsHookExW, UnhookWindowsHookEx, HHOOK,
+    KBDLLHOOKSTRUCT, LLKHF_INJECTED, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN,
+    WM_SYSKEYUP,
 };
 
 use crate::input;
@@ -114,9 +115,9 @@ fn on_keydown(vk: u16) -> bool {
     }
 
     match vk {
-        VK_SPACE => return commit_word(vk, Boundary::Space),
-        VK_RETURN => return commit_word(vk, Boundary::Enter),
-        VK_TAB => return commit_word(vk, Boundary::Tab),
+        VK_SPACE => return commit_inner(vk, Boundary::Space),
+        VK_RETURN => return commit_inner(vk, Boundary::Enter),
+        VK_TAB => return commit_inner(vk, Boundary::Tab),
         _ => {}
     }
 
@@ -129,7 +130,7 @@ fn on_keydown(vk: u16) -> bool {
             push_stroke(ch, vk);
             false
         }
-        Some(ch) => commit_word_char(vk, ch),
+        Some(ch) => commit_inner(vk, Boundary::Char(ch)),
         None => {
             state::clear_word();
             false
@@ -168,7 +169,11 @@ fn on_keyup(vk: u16) -> bool {
 
 fn track_foreground() {
     let fg = unsafe { GetForegroundWindow() };
-    let hwnd = if fg == HWND::default() { 0 } else { fg.0 as isize };
+    let hwnd = if fg == HWND::default() {
+        0
+    } else {
+        fg.0 as isize
+    };
     state::set_foreground(hwnd);
 }
 
@@ -205,14 +210,6 @@ fn decode_char(vk: u16) -> Option<char> {
         return None;
     }
     layout::char_for_key(hkl, vk, state::shift_held(), state::caps_on())
-}
-
-fn commit_word(vk: u16, boundary: Boundary) -> bool {
-    commit_inner(vk, boundary)
-}
-
-fn commit_word_char(vk: u16, ch: char) -> bool {
-    commit_inner(vk, Boundary::Char(ch))
 }
 
 fn commit_inner(vk: u16, boundary: Boundary) -> bool {

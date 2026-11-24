@@ -106,8 +106,6 @@ pub fn ctrl_or_alt_held() -> bool {
     with(|s| s.ctrl || s.alt)
 }
 
-
-
 pub fn suppress_key(vk: u16) {
     with(|s| {
         s.suppressed.insert(vk);

@@ -12,7 +12,12 @@ Binary: `target/release/key-helper.exe`
 
 ## Data
 
-Dictionaries in `crates/core/data/` combine [danakt/russian-words](https://github.com/danakt/russian-words) (MIT), [dwyl/english-words](https://github.com/dwyl/english-words) (Unlicense), [hingston/russian](https://github.com/hingston/russian) (CC BY 2.5), [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords) (content CC-BY-SA-4.0, code MIT), [zuzk/largest-word-list](https://github.com/zuzk/largest-word-list) (MIT), [open-dict-data/wikidict-wordlist](https://github.com/open-dict-data/wikidict-wordlist) (CC0), [jumberties/agk-wordlists](https://github.com/jumberties/agk-wordlists) (MPL-1.1, derived from brown-uk/dict_uk), [LDNOOBWV2/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words_V2](https://github.com/LDNOOBWV2/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words_V2) (CC0), [censor-text/profanity-list](https://github.com/censor-text/profanity-list) (Unlicense) and [readme-SVG/Banned-words](https://github.com/readme-SVG/Banned-words) (Apache-2.0). Supports English, Russian and Ukrainian layouts. See `LICENSE` for code terms.
+Dictionaries in `crates/core/data/` are plain word lists (one word per line):
+
+- `ru.txt` — all word forms from [OpenCorpora](https://opencorpora.org/) (CC BY-SA 3.0), revision 417258.
+- `en.txt`, `uk.txt` — aggregated from open word lists: [dwyl/english-words](https://github.com/dwyl/english-words) (Unlicense), [zuzk/largest-word-list](https://github.com/zuzk/largest-word-list) (MIT), [open-dict-data/wikidict-wordlist](https://github.com/open-dict-data/wikidict-wordlist) (CC0), [jumberties/agk-wordlists](https://github.com/jumberties/agk-wordlists) (MPL-1.1, derived from brown-uk/dict_uk) and others.
+
+Supports English, Russian and Ukrainian layouts. Dictionary data remains under its original licenses (notably CC BY-SA 3.0 for `ru.txt`); see `LICENSE` for code terms.
 
 ## License
 

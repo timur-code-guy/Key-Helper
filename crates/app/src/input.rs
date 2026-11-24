@@ -1,23 +1,20 @@
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT, KEYEVENTF_KEYUP,
-    KEYEVENTF_UNICODE, SendInput, VIRTUAL_KEY,
+    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP,
+    KEYEVENTF_UNICODE, VIRTUAL_KEY,
 };
 
-fn vk_input(vk: VIRTUAL_KEY, key_up: bool, extended: bool) -> INPUT {
-    let mut flags = KEYBD_EVENT_FLAGS(0);
-    if key_up {
-        flags |= KEYEVENTF_KEYUP;
-    }
-    if extended {
-        flags |= windows::Win32::UI::Input::KeyboardAndMouse::KEYEVENTF_EXTENDEDKEY;
-    }
+fn vk_input(vk: VIRTUAL_KEY, key_up: bool) -> INPUT {
     INPUT {
         r#type: INPUT_KEYBOARD,
         Anonymous: INPUT_0 {
             ki: KEYBDINPUT {
                 wVk: vk,
                 wScan: 0,
-                dwFlags: flags,
+                dwFlags: if key_up {
+                    KEYEVENTF_KEYUP
+                } else {
+                    KEYBD_EVENT_FLAGS(0)
+                },
                 time: 0,
                 dwExtraInfo: 0,
             },
@@ -56,7 +53,7 @@ pub fn send(inputs: &[INPUT]) {
 pub fn backspaces(count: usize) -> Vec<INPUT> {
     let vk = VIRTUAL_KEY(0x08);
     (0..count)
-        .flat_map(|_| [vk_input(vk, false, false), vk_input(vk, true, false)])
+        .flat_map(|_| [vk_input(vk, false), vk_input(vk, true)])
         .collect()
 }
 
@@ -67,5 +64,5 @@ pub fn type_text(text: &str) -> Vec<INPUT> {
 }
 
 pub fn tap(vk: VIRTUAL_KEY) -> Vec<INPUT> {
-    vec![vk_input(vk, false, false), vk_input(vk, true, false)]
+    vec![vk_input(vk, false), vk_input(vk, true)]
 }

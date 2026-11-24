@@ -1,18 +1,18 @@
 use std::sync::atomic::{AtomicIsize, Ordering};
 
+use windows::core::w;
 use windows::Win32::Foundation::{HINSTANCE, HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::Shell::{
-    NIM_ADD, NIM_DELETE, NIF_ICON, NIF_MESSAGE, NIF_TIP, NOTIFYICONDATAW, Shell_NotifyIconW,
+    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NOTIFYICONDATAW,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyMenu, DestroyWindow,
-    GetCursorPos, HWND_MESSAGE, IDI_APPLICATION, LoadIconW, MF_CHECKED, MF_STRING, MF_UNCHECKED,
-    PostQuitMessage,
-    RegisterClassW, SetForegroundWindow, TPM_RETURNCMD, TrackPopupMenu, WINDOW_EX_STYLE,
-    WINDOW_STYLE, WNDCLASSW, WM_CLOSE, WM_COMMAND, WM_DESTROY, WM_RBUTTONUP, WM_USER,
+    GetCursorPos, LoadIconW, PostMessageW, PostQuitMessage, RegisterClassW, SetForegroundWindow,
+    TrackPopupMenu, HWND_MESSAGE, IDI_APPLICATION, MF_CHECKED, MF_STRING, MF_UNCHECKED,
+    TPM_RETURNCMD, WINDOW_EX_STYLE, WINDOW_STYLE, WM_CLOSE, WM_COMMAND, WM_DESTROY, WM_RBUTTONUP,
+    WM_USER, WNDCLASSW,
 };
-use windows::core::w;
 
 const WM_TRAYICON: u32 = WM_USER + 1;
 const TRAY_ID: u32 = 1;
@@ -67,7 +67,10 @@ pub fn init() {
         nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
         nid.uCallbackMessage = WM_TRAYICON;
         nid.hIcon = icon;
-        let tip: Vec<u16> = "Key-Helper".encode_utf16().chain(std::iter::once(0)).collect();
+        let tip: Vec<u16> = "Key-Helper"
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
         let len = tip.len().min(nid.szTip.len());
         nid.szTip[..len].copy_from_slice(&tip[..len]);
 
@@ -84,12 +87,7 @@ pub fn quit() {
     let raw = TRAY_HWND.load(Ordering::SeqCst);
     if raw != 0 {
         unsafe {
-            let _ = windows::Win32::UI::WindowsAndMessaging::PostMessageW(
-                Some(HWND(raw as *mut _)),
-                windows::Win32::UI::WindowsAndMessaging::WM_CLOSE,
-                WPARAM(0),
-                LPARAM(0),
-            );
+            let _ = PostMessageW(Some(HWND(raw as *mut _)), WM_CLOSE, WPARAM(0), LPARAM(0));
         }
     }
 }
@@ -155,7 +153,12 @@ fn show_menu(hwnd: HWND) {
 
         let _ = AppendMenuW(
             menu,
-            MF_STRING | if autostart_enabled() { MF_CHECKED } else { MF_UNCHECKED },
+            MF_STRING
+                | if autostart_enabled() {
+                    MF_CHECKED
+                } else {
+                    MF_UNCHECKED
+                },
             IDM_AUTOSTART,
             w!("Launch with Windows"),
         );
@@ -166,12 +169,7 @@ fn show_menu(hwnd: HWND) {
         let _ = SetForegroundWindow(hwnd);
         let cmd = TrackPopupMenu(menu, TPM_RETURNCMD, pt.x, pt.y, Some(0), hwnd, None);
         if cmd.as_bool() {
-            let _ = windows::Win32::UI::WindowsAndMessaging::PostMessageW(
-                Some(hwnd),
-                WM_COMMAND,
-                WPARAM(cmd.0 as usize),
-                LPARAM(0),
-            );
+            let _ = PostMessageW(Some(hwnd), WM_COMMAND, WPARAM(cmd.0 as usize), LPARAM(0));
         }
         let _ = DestroyMenu(menu);
     }
@@ -186,7 +184,10 @@ fn open_run_key(
     use windows::Win32::System::Registry::{RegOpenKeyExW, HKEY, HKEY_CURRENT_USER};
     unsafe {
         let mut key = HKEY::default();
-        let path: Vec<u16> = RUN_KEY_PATH.encode_utf16().chain(std::iter::once(0)).collect();
+        let path: Vec<u16> = RUN_KEY_PATH
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
         let status = RegOpenKeyExW(
             HKEY_CURRENT_USER,
             windows::core::PCWSTR(path.as_ptr()),
@@ -210,7 +211,10 @@ fn autostart_enabled() -> bool {
         return false;
     };
     unsafe {
-        let name: Vec<u16> = RUN_VALUE_NAME.encode_utf16().chain(std::iter::once(0)).collect();
+        let name: Vec<u16> = RUN_VALUE_NAME
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
         let mut data_type = REG_VALUE_TYPE(0);
         let mut size = 0u32;
         let status = RegQueryValueExW(
@@ -228,22 +232,21 @@ fn autostart_enabled() -> bool {
 
 fn toggle_autostart() {
     use windows::Win32::System::Registry::{
-        RegCloseKey, RegDeleteValueW, RegSetValueExW, HKEY, KEY_SET_VALUE, REG_SZ,
+        RegCloseKey, RegDeleteValueW, RegSetValueExW, KEY_SET_VALUE, REG_SZ,
     };
     let Some(key) = open_run_key(KEY_SET_VALUE) else {
         return;
     };
-    let key: HKEY = key;
     unsafe {
-        let name: Vec<u16> = RUN_VALUE_NAME.encode_utf16().chain(std::iter::once(0)).collect();
+        let name: Vec<u16> = RUN_VALUE_NAME
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
         if autostart_enabled() {
             let _ = RegDeleteValueW(key, windows::core::PCWSTR(name.as_ptr()));
         } else if let Ok(exe) = std::env::current_exe() {
-            let data: Vec<u16> = exe
-                .to_string_lossy()
-                .encode_utf16()
-                .chain(std::iter::once(0))
-                .collect();
+            let quoted = format!("\"{}\"", exe.display());
+            let data: Vec<u16> = quoted.encode_utf16().chain(std::iter::once(0)).collect();
             let _ = RegSetValueExW(
                 key,
                 windows::core::PCWSTR(name.as_ptr()),

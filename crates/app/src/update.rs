@@ -14,14 +14,12 @@ use windows::Win32::UI::Controls::{
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, GetSystemMetrics,
     MessageBoxW, PeekMessageW, RegisterClassW, SendMessageW, SetWindowTextW, TranslateMessage,
-    MB_ICONINFORMATION, MB_OK, MB_SETFOREGROUND, MB_TOPMOST, MB_YESNO, MSG, PM_REMOVE,
-    SM_CXSCREEN,
-    SM_CYSCREEN, WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSW, WM_CLOSE, WM_DESTROY, WS_CAPTION,
+    MB_ICONINFORMATION, MB_OK, MB_SETFOREGROUND, MB_TOPMOST, MB_YESNO, MSG, PM_REMOVE, SM_CXSCREEN,
+    SM_CYSCREEN, WINDOW_EX_STYLE, WINDOW_STYLE, WM_CLOSE, WM_DESTROY, WNDCLASSW, WS_CAPTION,
     WS_CHILD, WS_OVERLAPPED, WS_SYSMENU, WS_VISIBLE,
 };
 
-const API_URL: &str =
-    "https://api.github.com/repos/timur-code-guy/Key-Helper/releases/latest";
+const API_URL: &str = "https://api.github.com/repos/timur-code-guy/Key-Helper/releases/latest";
 const EXE_NAME: &str = "key-helper.exe";
 const UPDATE_DIR: &str = "key-helper-update";
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -50,10 +48,7 @@ fn run() -> Result<(), String> {
     let body = get_text(&agent, API_URL)?;
     let json: Value = serde_json::from_str(&body).map_err(|e| e.to_string())?;
 
-    let tag = json
-        .get("tag_name")
-        .and_then(Value::as_str)
-        .unwrap_or("");
+    let tag = json.get("tag_name").and_then(Value::as_str).unwrap_or("");
     let latest = parse_version(tag).ok_or_else(|| format!("bad tag: {tag}"))?;
     let current = parse_version(env!("CARGO_PKG_VERSION")).unwrap_or((0, 0, 0));
     if latest <= current {
@@ -78,9 +73,7 @@ fn run() -> Result<(), String> {
 }
 
 fn check_just_updated() {
-    let flag = std::env::temp_dir()
-        .join(UPDATE_DIR)
-        .join("updated.flag");
+    let flag = std::env::temp_dir().join(UPDATE_DIR).join("updated.flag");
     if flag.exists() {
         let _ = fs::remove_file(&flag);
         let _ = fs::remove_dir(std::env::temp_dir().join(UPDATE_DIR));
@@ -104,21 +97,15 @@ fn get_text(agent: &ureq::Agent, url: &str) -> Result<String, String> {
         .header("Accept", "application/vnd.github+json")
         .call()
         .map_err(|e| e.to_string())?;
-    resp.body_mut()
-        .read_to_string()
-        .map_err(|e| e.to_string())
+    resp.body_mut().read_to_string().map_err(|e| e.to_string())
 }
 
 fn find_download_url(json: &Value) -> Option<(String, Option<u64>)> {
     let assets = json.get("assets")?.as_array()?;
     let asset = assets
         .iter()
-        .find(|a| a.get("name").and_then(Value::as_str) == Some(EXE_NAME))
-        .or_else(|| assets.first())?;
-    let url = asset
-        .get("browser_download_url")?
-        .as_str()?
-        .to_string();
+        .find(|a| a.get("name").and_then(Value::as_str) == Some(EXE_NAME))?;
+    let url = asset.get("browser_download_url")?.as_str()?.to_string();
     let size = asset.get("size").and_then(Value::as_u64);
     Some((url, size))
 }
@@ -230,7 +217,15 @@ impl ProgressDialog {
                 .ok()
             };
 
-            child(w!("Static"), w!("Downloading update..."), WINDOW_STYLE(0), 16, 14, 300, 20)?;
+            child(
+                w!("Static"),
+                w!("Downloading update..."),
+                WINDOW_STYLE(0),
+                16,
+                14,
+                300,
+                20,
+            )?;
             let percent = child(w!("Static"), w!(""), WINDOW_STYLE(0), 320, 14, 64, 20)?;
             let bar = child(
                 w!("msctls_progress32"),
